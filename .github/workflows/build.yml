@@ -13,9 +13,14 @@ jobs:
 
       - name: Unpack project
         run: |
+          ls -la
+          ZIP="$(ls -t ./*.zip | head -n 1)"
+          echo "Using: $ZIP"
           mkdir tmp
-          unzip -q vpn_app.zip -d tmp
-          mv tmp/vpn_app src
+          unzip -q "$ZIP" -d tmp
+          PUB="$(find tmp -name pubspec.yaml | head -n 1)"
+          cp -r "$(dirname "$PUB")" src
+          ls -la src
 
       - uses: actions/setup-java@v4
         with:
@@ -33,6 +38,7 @@ jobs:
           flutter create --platforms=android --org com.example --project-name vpn /tmp/scaffold
           cp -r /tmp/scaffold/android ./android
           cp -r android_overrides/* android/
+          python3 tools/patch_gradle.py android/app
 
       - name: Pub get
         working-directory: src
@@ -40,7 +46,7 @@ jobs:
 
       - name: Build release APK
         working-directory: src
-        run: flutter build apk --release
+        run: flutter build apk --release --no-shrink
 
       - uses: actions/upload-artifact@v4
         with:
